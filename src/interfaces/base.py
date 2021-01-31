@@ -158,7 +158,8 @@ class TextBase(object):
                     model.load_state_dict(torch.load(self.resume)['state_dict_G'])
                 else:
                     model.load_state_dict(
-                        {'module.' + k: v for k, v in torch.load(self.resume)['state_dict_G'].items()})
+                        {'module.' + k: v for k, v in torch.load(self.resume, map_location=torch.device('cpu'))['state_dict_G'].items()}, False)
+
         return {'model': model, 'crit': image_crit}
 
     def optimizer_init(self, model):
@@ -221,6 +222,34 @@ class TextBase(object):
                     im_name = pred_str_lr[i] + '_' + pred_str_sr[i] + '_' + label_strs[i] + '_.png'
                     im_name = im_name.replace('/', '')
                     torchvision.utils.save_image(vis_im, os.path.join(out_root, im_name), padding=0)
+        return visualized
+
+
+    def test_display_demo(self, image_in, image_out, pred_str_lr, pred_str_sr):
+        visualized = 0
+        for i in (range(image_in.shape[0])):
+            visualized += 1
+            tensor_in = image_in[i].cpu()
+            tensor_out = image_out[i].cpu()
+            image_target = image_out[i]
+            tensor_target = image_out[i].cpu()
+            transform = transforms.Compose(
+                [transforms.ToPILImage(),
+                 transforms.Resize((image_target.shape[-2], image_target.shape[-1]), interpolation=Image.BICUBIC),
+                 transforms.ToTensor()]
+            )
+            tensor_in = transform(tensor_in)
+            images = ([tensor_in, tensor_out, tensor_target])
+            vis_im = torch.stack(images)
+            vis_im = torchvision.utils.make_grid(vis_im, nrow=1, padding=0)
+            out_root = os.path.join('./display', self.vis_dir)
+            if not os.path.exists(out_root):
+                os.mkdir(out_root)
+            if not os.path.exists(out_root):
+                os.mkdir(out_root)
+            im_name = pred_str_lr[i] + '_' + pred_str_sr[i] + '_.png'
+            im_name = im_name.replace('/', '')
+            torchvision.utils.save_image(vis_im, os.path.join(out_root, im_name), padding=0)
         return visualized
 
     def save_checkpoint(self, netG, epoch, iters, best_acc_dict, best_model_info, is_best, converge_list):
@@ -298,7 +327,7 @@ class TextBase(object):
         aster = recognizer.RecognizerBuilder(arch='ResNet_ASTER', rec_num_classes=aster_info.rec_num_classes,
                                              sDim=512, attDim=512, max_len_labels=aster_info.max_len,
                                              eos=aster_info.char2id[aster_info.EOS], STN_ON=True)
-        aster.load_state_dict(torch.load(self.config.TRAIN.VAL.rec_pretrained)['state_dict'])
+        aster.load_state_dict(torch.load(self.config.TRAIN.VAL.rec_pretrained)['state_dict'], map_location=torch.device('cpu'))
         print('load pred_trained aster model from %s' % self.config.TRAIN.VAL.rec_pretrained)
         aster = aster.to(self.device)
         aster = torch.nn.DataParallel(aster, device_ids=range(cfg.ngpu))
@@ -307,7 +336,7 @@ class TextBase(object):
     def parse_aster_data(self, imgs_input):
         cfg = self.config.TRAIN
         aster_info = AsterInfo(cfg.voc_type)
-        input_dict = {}
+        # input_dict = {}
         images_input = imgs_input.to(self.device)
         input_dict['images'] = images_input * 2 - 1
         batch_size = images_input.shape[0]

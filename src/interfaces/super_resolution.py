@@ -198,6 +198,7 @@ class TextSR(base.TextBase):
         time_begin = time.time()
         sr_time = 0
         for i, data in (enumerate(test_loader)):
+            print('image number: ', i)
             images_hr, images_lr, label_strs = data
             val_batch_size = images_lr.shape[0]
             images_lr = images_lr.to(self.device)
@@ -326,6 +327,8 @@ class TextSR(base.TextBase):
                 aster_output_lr = aster(aster_dict_lr)
                 pred_rec_lr = aster_output_lr['output']['pred_rec']
                 pred_str_lr, _ = get_str_list(pred_rec_lr, aster_dict_lr['rec_targets'], dataset=aster_info)
+                print('test display')
+                self.test_display_demo(images_lr, images_sr, pred_str_lr, pred_str_sr)
             elif self.args.rec == 'crnn':
                 crnn_input = self.parse_crnn_data(images_sr[:, :3, :, :])
                 crnn_output = crnn(crnn_input)

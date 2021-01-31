@@ -10,9 +10,9 @@ TRAIN:
   width: 128
   height: 32
   epochs: 500
-  cuda: True
-  ngpu: 4
-  workers: 2
+  cuda: False
+  ngpu: 0
+  workers: 1
   resume: ''
   ckpt_dir: './ckpt/'
   voc_type: 'all' #'digits lower upper all'
@@ -36,7 +36,7 @@ TRAIN:
     n_vis: 10
     vis_dir: 'demo'
     valInterval: 200 #-1, val at the end of epoch
-    rec_pretrained: 'demo.pth.tar'
+    rec_pretrained: '/Users/yustinaivanova/git_projects/TextZoom/src/weights/demo.pth.tar'
     moran_pretrained: 'moran.pth'
     crnn_pretrained: 'crnn.pth'
 
